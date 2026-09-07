@@ -1,0 +1,263 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================================
+// ENUMS
+// ==========================================================
+
+enum Role {
+  DONOR
+  REQUESTER
+  ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  BLOCKED
+}
+
+enum AuthProvider {
+  LOCAL
+  GOOGLE
+}
+
+enum BloodGroup {
+  A_POSITIVE
+  A_NEGATIVE
+  B_POSITIVE
+  B_NEGATIVE
+  AB_POSITIVE
+  AB_NEGATIVE
+  O_POSITIVE
+  O_NEGATIVE
+}
+
+enum RequestStatus {
+  PENDING
+  VERIFIED
+  MATCHING
+  ASSIGNED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum Priority {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum AssignmentStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+enum PaymentPurpose {
+  EMERGENCY_VERIFICATION_FEE
+  LOGISTICS_SUPPORT_FEE
+  PLATFORM_COORDINATION_FEE
+}
+
+// ==========================================================
+// MODELS
+// ==========================================================
+
+model User {
+  id             String       @id @default(uuid())
+  name           String
+  email          String       @unique
+  password       String?
+  role           Role         @default(REQUESTER)
+  status         UserStatus   @default(ACTIVE)
+  provider       AuthProvider @default(LOCAL)
+  googleId       String?      @unique
+  phone          String?
+  isEmailVerified Boolean     @default(false)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+  deletedAt      DateTime?
+
+  donorProfile     DonorProfile?
+  bloodRequests    BloodRequest[]   @relation("RequesterRequests")
+  verifiedRequests BloodRequest[]   @relation("VerifiedByAdmin")
+  payments         Payment[]
+  auditLogs        AuditLog[]       @relation("ActorAuditLogs")
+  refreshTokens    RefreshToken[]
+
+  @@index([role])
+  @@index([status])
+  @@index([email])
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  revoked   Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@map("refresh_tokens")
+}
+
+model DonorProfile {
+  id               String     @id @default(uuid())
+  userId           String     @unique
+  user             User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bloodGroup       BloodGroup
+  location         String
+  latitude         Float?
+  longitude        Float?
+  availability     Boolean    @default(true)
+  isEligible       Boolean    @default(true)
+  lastDonationDate DateTime?
+  totalDonations   Int        @default(0)
+  weightKg         Float?
+  ageYears         Int?
+  medicalNotes     String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  deletedAt        DateTime?
+
+  assignments DonationAssignment[]
+  donations   DonationHistory[]
+
+  @@index([bloodGroup])
+  @@index([availability])
+  @@index([location])
+  @@index([isEligible])
+  @@map("donor_profiles")
+}
+
+model BloodRequest {
+  id               String        @id @default(uuid())
+  requesterId      String
+  requester        User          @relation("RequesterRequests", fields: [requesterId], references: [id])
+  patientName      String
+  bloodGroup       BloodGroup
+  unitsNeeded      Int           @default(1)
+  hospitalName     String
+  location         String
+  latitude         Float?
+  longitude        Float?
+  priority         Priority      @default(NORMAL)
+  status           RequestStatus @default(PENDING)
+  neededBy         DateTime?
+  contactPhone     String
+  notes            String?
+  verifiedById     String?
+  verifiedBy       User?         @relation("VerifiedByAdmin", fields: [verifiedById], references: [id])
+  verifiedAt       DateTime?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  deletedAt        DateTime?
+
+  assignments DonationAssignment[]
+  payments    Payment[]
+
+  @@index([status])
+  @@index([bloodGroup])
+  @@index([priority])
+  @@index([location])
+  @@index([createdAt])
+  @@map("blood_requests")
+}
+
+model DonationAssignment {
+  id             String           @id @default(uuid())
+  bloodRequestId String
+  bloodRequest   BloodRequest     @relation(fields: [bloodRequestId], references: [id], onDelete: Cascade)
+  donorProfileId String
+  donorProfile   DonorProfile     @relation(fields: [donorProfileId], references: [id])
+  status         AssignmentStatus @default(PENDING)
+  respondedAt    DateTime?
+  completedAt    DateTime?
+  cancelReason   String?
+  createdAt      DateTime         @default(now())
+  updatedAt      DateTime         @updatedAt
+
+  donation DonationHistory?
+
+  @@unique([bloodRequestId, donorProfileId])
+  @@index([status])
+  @@index([donorProfileId])
+  @@map("donation_assignments")
+}
+
+model DonationHistory {
+  id             String   @id @default(uuid())
+  assignmentId   String   @unique
+  assignment     DonationAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+  donorProfileId String
+  donorProfile   DonorProfile @relation(fields: [donorProfileId], references: [id])
+  unitsDonated   Int      @default(1)
+  donationDate   DateTime @default(now())
+  location       String
+  notes          String?
+  createdAt      DateTime @default(now())
+
+  @@index([donorProfileId])
+  @@index([donationDate])
+  @@map("donation_history")
+}
+
+model Payment {
+  id             String         @id @default(uuid())
+  userId         String
+  user           User           @relation(fields: [userId], references: [id])
+  bloodRequestId String?
+  bloodRequest   BloodRequest?  @relation(fields: [bloodRequestId], references: [id])
+  transactionId  String         @unique
+  purpose        PaymentPurpose
+  amount         Float
+  currency       String         @default("BDT")
+  status         PaymentStatus  @default(PENDING)
+  gateway        String         @default("SSLCOMMERZ")
+  gatewayResponse Json?
+  paidAt         DateTime?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  @@index([status])
+  @@index([userId])
+  @@index([transactionId])
+  @@map("payments")
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  actorId    String?
+  actor      User?    @relation("ActorAuditLogs", fields: [actorId], references: [id])
+  action     String
+  entityType String
+  entityId   String
+  metadata   Json?
+  createdAt  DateTime @default(now())
+
+  @@index([entityType, entityId])
+  @@index([action])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
