@@ -1,0 +1,504 @@
+{
+  "info": {
+    "name": "Blood Donation & Emergency Platform API",
+    "description": "Complete Postman collection for the Blood Donation & Emergency Platform backend (Node.js, TypeScript, Express, PostgreSQL, Prisma).",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:5000/api/v1" },
+    { "key": "accessToken", "value": "" },
+    { "key": "refreshToken", "value": "" },
+    { "key": "adminAccessToken", "value": "" },
+    { "key": "bloodRequestId", "value": "" },
+    { "key": "donorProfileId", "value": "" },
+    { "key": "assignmentId", "value": "" },
+    { "key": "userId", "value": "" },
+    { "key": "paymentId", "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Register (Requester)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sample Requester\",\n  \"email\": \"requester2@example.com\",\n  \"password\": \"Requester@12345\",\n  \"role\": \"REQUESTER\",\n  \"phone\": \"+8801700000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Register (Donor)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/register",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Sample Donor\",\n  \"email\": \"donor2@example.com\",\n  \"password\": \"Donor@12345\",\n  \"role\": \"DONOR\",\n  \"phone\": \"+8801700000001\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.accessToken) { pm.collectionVariables.set('accessToken', data.accessToken); }",
+                  "if (data && data.refreshToken) { pm.collectionVariables.set('refreshToken', data.refreshToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"requester@example.com\",\n  \"password\": \"Requester@12345\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login (Admin)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.accessToken) { pm.collectionVariables.set('adminAccessToken', data.accessToken); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/login",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin@blooddonation.com\",\n  \"password\": \"Admin@12345\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Google Login",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/google",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"idToken\": \"<google-id-token-from-client-sign-in>\",\n  \"role\": \"REQUESTER\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/refresh-token",
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "url": "{{baseUrl}}/auth/logout",
+            "body": { "mode": "raw", "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "User",
+      "item": [
+        {
+          "name": "Get My Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/users/me"
+          }
+        },
+        {
+          "name": "Update My Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/users/me",
+            "body": { "mode": "raw", "raw": "{\n  \"name\": \"Updated Name\",\n  \"phone\": \"+8801711111111\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Donor",
+      "item": [
+        {
+          "name": "Create Donor Profile",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/donors/profile",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bloodGroup\": \"O_NEGATIVE\",\n  \"location\": \"Sylhet\",\n  \"weightKg\": 68,\n  \"ageYears\": 26\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Donor Profile",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/donors/profile"
+          }
+        },
+        {
+          "name": "Update My Donor Profile",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/donors/profile",
+            "body": { "mode": "raw", "raw": "{\n  \"location\": \"Dhaka\"\n}" }
+          }
+        },
+        {
+          "name": "Update Availability",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/donors/availability",
+            "body": { "mode": "raw", "raw": "{\n  \"availability\": true\n}" }
+          }
+        },
+        {
+          "name": "Get Matching Requests (for me)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/donors/requests?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get My Donation History",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/donors/donation-history?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Search Donors (Admin/Requester)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/donors/search?bloodGroup=O_NEGATIVE&availability=true&page=1&limit=10"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Blood Requests",
+      "item": [
+        {
+          "name": "Create Blood Request",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.id) { pm.collectionVariables.set('bloodRequestId', data.id); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/blood-requests",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientName\": \"Abdul Karim\",\n  \"bloodGroup\": \"O_POSITIVE\",\n  \"unitsNeeded\": 2,\n  \"hospitalName\": \"Sylhet MAG Osmani Medical College\",\n  \"location\": \"Sylhet\",\n  \"priority\": \"CRITICAL\",\n  \"contactPhone\": \"+8801700000002\",\n  \"notes\": \"Needed urgently for surgery\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get All Blood Requests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/blood-requests?page=1&limit=10&status=PENDING&sortBy=createdAt&sortOrder=desc"
+          }
+        },
+        {
+          "name": "Search Blood Requests",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/search?q=sylhet&page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get Blood Request By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}"
+          }
+        },
+        {
+          "name": "Update Blood Request",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}",
+            "body": { "mode": "raw", "raw": "{\n  \"unitsNeeded\": 3\n}" }
+          }
+        },
+        {
+          "name": "Cancel (Soft Delete) Blood Request",
+          "request": {
+            "method": "DELETE",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}"
+          }
+        },
+        {
+          "name": "Verify Blood Request (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/verify"
+          }
+        },
+        {
+          "name": "Get Matching Donors (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/matches"
+          }
+        },
+        {
+          "name": "Assign Donor (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminAccessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/blood-requests/{{bloodRequestId}}/assign-donor",
+            "body": { "mode": "raw", "raw": "{\n  \"donorProfileId\": \"{{donorProfileId}}\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Assignments",
+      "item": [
+        {
+          "name": "Get Assignment By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/assignments/{{assignmentId}}"
+          }
+        },
+        {
+          "name": "Donor Accepts Assignment",
+          "request": {
+            "method": "PATCH",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/assignments/{{assignmentId}}/accept"
+          }
+        },
+        {
+          "name": "Donor Rejects Assignment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/assignments/{{assignmentId}}/reject",
+            "body": { "mode": "raw", "raw": "{\n  \"cancelReason\": \"Not available anymore\"\n}" }
+          }
+        },
+        {
+          "name": "Donor Completes Assignment",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/assignments/{{assignmentId}}/complete",
+            "body": { "mode": "raw", "raw": "{\n  \"unitsDonated\": 1,\n  \"notes\": \"Donation completed successfully\"\n}" }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Donations",
+      "item": [
+        {
+          "name": "Get All Donations",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/donations?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get Donation By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/donations/:id"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Payments",
+      "item": [
+        {
+          "name": "Initiate Payment",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "const data = pm.response.json().data;",
+                  "if (data && data.paymentId) { pm.collectionVariables.set('paymentId', data.paymentId); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{accessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/payments/initiate",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bloodRequestId\": \"{{bloodRequestId}}\",\n  \"purpose\": \"EMERGENCY_VERIFICATION_FEE\",\n  \"amount\": 200,\n  \"customerName\": \"Sample Requester\",\n  \"customerPhone\": \"+8801700000000\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Get My Payments",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/payments?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get Payment By Id",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{accessToken}}" }],
+            "url": "{{baseUrl}}/payments/{{paymentId}}"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/admin/users?page=1&limit=10&role=DONOR"
+          }
+        },
+        {
+          "name": "Update User Role",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminAccessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/users/{{userId}}/role",
+            "body": { "mode": "raw", "raw": "{\n  \"role\": \"DONOR\"\n}" }
+          }
+        },
+        {
+          "name": "Update User Status (Block/Unblock)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              { "key": "Authorization", "value": "Bearer {{adminAccessToken}}" },
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "url": "{{baseUrl}}/admin/users/{{userId}}/status",
+            "body": { "mode": "raw", "raw": "{\n  \"status\": \"BLOCKED\"\n}" }
+          }
+        },
+        {
+          "name": "Get Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/admin/dashboard-stats"
+          }
+        },
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/admin/audit-logs?page=1&limit=10"
+          }
+        },
+        {
+          "name": "Get All Blood Requests (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [{ "key": "Authorization", "value": "Bearer {{adminAccessToken}}" }],
+            "url": "{{baseUrl}}/admin/blood-requests?page=1&limit=10"
+          }
+        }
+      ]
+    }
+  ]
+}
