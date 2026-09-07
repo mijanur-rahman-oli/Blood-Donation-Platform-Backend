@@ -8,15 +8,15 @@ let server: Server;
 async function main() {
   try {
     await prisma.$connect();
-    console.log('✅ Connected to PostgreSQL via Prisma');
+    console.log('Connected to PostgreSQL via Prisma');
 
     server = app.listen(config.port, () => {
-      console.log(`🚀 Blood Donation & Emergency Platform API listening on port ${config.port}`);
+      console.log(`Blood Donation & Emergency Platform API listening on port ${config.port}`);
       console.log(`   Environment: ${config.env}`);
       console.log(`   Base URL:    http://localhost:${config.port}/api/${config.apiVersion}`);
     });
   } catch (error) {
-    console.error('❌ Failed to start the server:', error);
+    console.error('Failed to start the server:', error);
     process.exit(1);
   }
 
